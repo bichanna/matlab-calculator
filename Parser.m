@@ -34,8 +34,15 @@ classdef Parser < handle
             
             if node.kind == "error"
                 return;
-            elseif parser.current.kind ~= '.'
-                node = parser.createError("expected '.'");
+            elseif parser.current.kind ~= ';'
+                
+                fprintf("tokens: ");
+                for token = parser.tokens
+                    fprintf("%s ", token.kind);
+                end
+                fprintf("\n");
+
+                node = parser.createError("expected ';'");
             else
                 parser.advance;
             end
@@ -48,47 +55,83 @@ classdef Parser < handle
         function node = parseTerm(parser)
             node = parser.parseFactor;
 
-            if node.kind == "error"
-                return;
-            elseif parser.current.kind == '+'
-                parser.advance;
-                right = parser.parseFactor;
-                if right.kind == "error"
-                    node = right;
+            while true
+                if node.kind == "error"
+                    return;
+                elseif parser.current.kind == '+'
+                    parser.advance;
+                    right = parser.parseFactor;
+                    if right.kind == "error"
+                        node = right;
+                    else
+                        node = parser.createBinaryNode("add", node, right);
+                    end
+                elseif parser.current.kind == "-"
+                    parser.advance;
+                    right = parser.parseFactor;
+                    if right.kind == "error"
+                        node = right;
+                    else
+                        node = parser.createBinaryNode("sub", node, right);
+                    end
                 else
-                    node = parser.createBinaryNode("add", node, right);
-                end
-            elseif parser.current.kind == "-"
-                parser.advance;
-                right = parser.parseFactor;
-                if right.kind == "error"
-                    node = right;
-                else
-                    node = parser.createBinaryNode("sub", node, right);
+                    break;
                 end
             end
         end
 
         function node = parseFactor(parser)
+            node = parser.parsePower;
+
+            while true
+                if node.kind == "error"
+                    return;
+                elseif parser.current.kind == '/'
+                    parser.advance;
+                    right = parser.parsePower;
+                    if right.kind == "error"
+                        node = right;
+                    else
+                        node = parser.createBinaryNode("div", node, right);
+                    end
+                elseif parser.current.kind == '*'
+                    parser.advance;
+                    right = parser.parsePower;
+                    if right.kind == "error"
+                        node = right;
+                    else
+                        node = parser.createBinaryNode("mul", node, right);
+                    end
+                elseif parser.current.kind == '%'
+                    parser.advance;
+                    right = parser.parsePower;
+                    if right.kind == "error"
+                        node = right;
+                    else
+                        node = parser.createBinaryNode("rem", node, right);
+                    end
+                else
+                    break;
+                end
+            end
+        end
+
+        function node = parsePower(parser)
             node = parser.parseUnary;
 
-            if node.kind == "error"
-                return;
-            elseif parser.current.kind == '/'
-                parser.advance;
-                right = parser.parseUnary;
-                if right.kind == "error"
-                    node = right;
+            while true
+                if node.kind == "error"
+                    return;
+                elseif parser.current.kind == '^'
+                    parser.advance;
+                    right = parser.parseUnary;
+                    if right.kind == "error"
+                        node = right;
+                    else
+                        node = parser.createBinaryNode("pow", node, right);
+                    end
                 else
-                    node = parser.createBinaryNode("div", node, right);
-                end
-            elseif parser.current.kind == '*'
-                parser.advance;
-                right = parser.parseUnary;
-                if right.kind == "error"
-                    node = right;
-                else
-                    node = parser.createBinaryNode("mul", node, right);
+                    break;
                 end
             end
         end
