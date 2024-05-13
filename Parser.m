@@ -168,8 +168,29 @@ classdef Parser < handle
                             node = parser.createError("expected ')'");
                         end
                     end
+                case '['
+                    parser.advance;
+                    
+                    elems = [];
+                    while parser.current.kind ~= ']'
+                        expr = parser.parseExpr;
+                        if expr.kind == "error"
+                            node = expr;
+                            break;
+                        else
+                            elems = [elems, expr];
+                        end
+                    end
+
+                    if parser.current.kind ~= ']'
+                        node.kind = "error";
+                        node.left = "expected a closing bracket";
+                    else
+                        parser.advance;
+                        node = parser.createLiteralNode("array", elems);
+                    end
                 otherwise
-                    node = parser.createError("invalid token");
+                    node = parser.createError(fprintf("invalid token: %s", parser.current.kind))
             end
         end
 

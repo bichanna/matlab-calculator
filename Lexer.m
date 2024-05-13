@@ -51,6 +51,12 @@ classdef Lexer < handle
                     case ';'
                         token = lexer.createNoValueToken(";");
                         lexer.appendToken(token);
+                    case '['
+                        token = lexer.createNoValueToken("[");
+                        lexer.appendToken(token);
+                    case ']'
+                        token = lexer.createNoValueToken("]");
+                        lexer.appendToken(token);
                     otherwise
                         if lexer.isNumber(currentChar)
                             token = lexer.tokenizeNumber();

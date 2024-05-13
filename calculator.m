@@ -11,7 +11,7 @@ function calculator(str)
     if ~isempty(results)
         fprintf("Results:\n");
         for result = results
-            fprintf("%i\n", result.left);
+            fprintf("%s\n", evaluator.toStr(result));
         end
     end
 end
