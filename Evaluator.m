@@ -1,21 +1,43 @@
 classdef Evaluator < handle
     properties
         ast
+        vars
     end
 
     methods
         function evaluator = Evaluator(ast)
             evaluator.ast = ast;
+            evaluator.vars = containers.Map("KeyType", "char", "ValueType", "any");
         end
 
-        function node = createNode(eval, kind, op, left, right)
+        function node = createNode(~, kind, op, left, right)
             node.kind = kind;
             node.operator = op;
             node.left = left;
             node.right = right;
         end
 
-        function results = evaluate(eval)
+        function includeBuiltIns(eval)
+            builtIns = "pi = 3.14159265358979323846;" + ...
+                "e = 2.718281828459045;";
+
+            lexer = Lexer(builtIns);
+            lexer.tokenize;
+    
+            parser = Parser(lexer.tokens);
+            parser.parse;
+        
+            evaluator = Evaluator(parser.ast);
+            evaluator.evaluate(false);
+
+            eval.vars = evaluator.vars;
+        end
+
+        function results = evaluate(eval, include)
+            if include
+                eval.includeBuiltIns;
+            end
+
             results = [];
 
             for node = eval.ast
@@ -32,6 +54,12 @@ classdef Evaluator < handle
 
         function result = evalNode(eval, node)
             switch node.kind
+                case "ident"
+                    try
+                        result = eval.vars(node.left);
+                    catch
+                        result = eval.createNode("array", [], [], []);
+                    end
                 case "unary"
                     result = eval.evalUnary(node.operator, node.left);
                 case "binary"
@@ -175,7 +203,7 @@ classdef Evaluator < handle
         end
         
         function result = div(eval, left, right)
-            if right.kind == "number"
+            if right.left == 0
                 result = eval.createNode("error", [], "cannot divide by 0", []);
             elseif all([left.kind, right.kind] == "number")
                 result = eval.createNode("number", [], left.left / right.left, []);
@@ -284,22 +312,34 @@ classdef Evaluator < handle
             end
         end
 
-        function result = evalBinary(eval, op, left, right)
-            left =  eval.evalNode(left);
+        function [left, right] = evalLeftRight(eval, left, right)
+            left = eval.evalNode(left);
             right = eval.evalNode(right);
+        end
 
+        function result = evalBinary(eval, op, left, right)
             switch op
+                case "assign"
+                    right = eval.evalNode(right);
+                    eval.vars(left.left) = right;
+                    result = right;
                 case "add"
+                    [left, right] = eval.evalLeftRight(left, right);
                     result = eval.add(left, right);
                 case "sub"
+                    [left, right] = eval.evalLeftRight(left, right);
                     result = eval.sub(left, right);
                 case "mul"
+                    [left, right] = eval.evalLeftRight(left, right);
                     result = eval.mul(left, right);
                 case "div"
+                    [left, right] = eval.evalLeftRight(left, right);
                     result = eval.div(left, right);
                 case "rem"
+                    [left, right] = eval.evalLeftRight(left, right);
                     result = eval.remainder(left, right);
                 case "pow"
+                    [left, right] = eval.evalLeftRight(left, right);
                     result = eval.pow(left, right);
                 otherwise
                     result.kind = "error";

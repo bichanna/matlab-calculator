@@ -57,9 +57,15 @@ classdef Lexer < handle
                     case ']'
                         token = lexer.createNoValueToken("]");
                         lexer.appendToken(token);
+                    case '='
+                        token = lexer.createNoValueToken("=");
+                        lexer.appendToken(token);
                     otherwise
                         if lexer.isNumber(currentChar)
                             token = lexer.tokenizeNumber();
+                            lexer.appendToken(token);
+                        elseif lexer.isLetter(currentChar)
+                            token = lexer.tokenizeIdent();
                             lexer.appendToken(token);
                         else
                             lexer.index = -1;
@@ -103,6 +109,19 @@ classdef Lexer < handle
             newToken = lexer.createToken("number", num);
         end
 
+        function newToken = tokenizeIdent(lexer)
+            ident = "";
+
+            while lexer.isLetter(lexer.current) || lexer.isNumber(lexer.current)
+                ident = append(ident, lexer.current);
+                lexer.advance();
+            end
+
+            lexer.revert();
+            
+            newToken = lexer.createToken("ident", ident);
+        end
+
         function result = nextChar(lexer)
             if lexer.isNextEnd()
                 result = '\0';
@@ -113,6 +132,10 @@ classdef Lexer < handle
 
         function result = isNumber(~, char)
             result = isstrprop(char, "digit");
+        end
+
+        function result = isLetter(~, char)
+            result = isletter(char);
         end
 
         function newToken = createToken(~, kind, value)

@@ -42,6 +42,7 @@ classdef Parser < handle
                 end
                 fprintf("\n");
 
+                fprintf("Current: %s\n", parser.current.kind);
                 node = parser.createError("expected ';'");
             else
                 parser.advance;
@@ -49,7 +50,27 @@ classdef Parser < handle
         end
 
         function node = parseExpr(parser)
+            node = parser.parseAssignment;
+        end
+
+        function node = parseAssignment(parser)
             node = parser.parseTerm;
+
+            if node.kind == "error"
+                return;
+            elseif node.kind == "ident"
+                if parser.current.kind == "="
+                    parser.advance;
+                    value = parser.parseTerm;
+                    
+                    if value.kind == "error"
+                        node = value;
+                        return;
+                    end
+
+                    node = parser.createBinaryNode("assign", node, value);
+                end
+            end
         end
 
         function node = parseTerm(parser)
@@ -155,6 +176,9 @@ classdef Parser < handle
                 case "number"
                     node = parser.createLiteralNode("number", parser.current.value);
                     parser.advance;
+                case "ident"
+                    node = parser.createLiteralNode("ident", parser.current.value);
+                    parser.advance;
                 case '('
                     parser.advance;
                     expr = parser.parseExpr;
@@ -190,7 +214,7 @@ classdef Parser < handle
                         node = parser.createLiteralNode("array", elems);
                     end
                 otherwise
-                    node = parser.createError(fprintf("invalid token: %s", parser.current.kind))
+                    node = parser.createError(fprintf("invalid token: %s", parser.current.kind));
             end
         end
 

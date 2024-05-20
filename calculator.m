@@ -6,7 +6,7 @@ function calculator(str)
     parser.parse;
 
     evaluator = Evaluator(parser.ast);
-    results = evaluator.evaluate;
+    results = evaluator.evaluate(true);
     
     if ~isempty(results)
         fprintf("Results:\n");
